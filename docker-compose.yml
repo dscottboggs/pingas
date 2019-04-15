@@ -1,0 +1,17 @@
+version: 2
+services:
+  pingas:
+    build:
+      context: .
+    networks: [ web ]
+    labels:
+      traefik.docker.network: web
+      traefik.enable: "true"
+      traefik.pingas.frontend.rule: Host: test.tams.tech
+      traefik.pingas.port: 8080
+      traefik.pingas.proto: http
+    expose: 8080
+
+networks:
+  web:
+    external: true

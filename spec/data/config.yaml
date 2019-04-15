@@ -1,0 +1,19 @@
+---
+
+- kind: http
+  options:
+    path: https://test.tams.tech/
+    method: POST
+    body: ping
+
+- kind: bash
+  options:
+    command: echo test
+    status: 0
+    output: test
+
+- kind: sh
+  options:
+    command: echo shell test; false
+    status: 1
+    output: shell test
