@@ -9,8 +9,9 @@ struct Pingas::ConfigFile
         case key
         when "kind" then kind = parser.read_string
         when "options"
-          options = case kind
+          options = case k = kind
                     when nil
+                      # TODO this is a bit of a hack....
                       parser.raise %<"kind" must be specified before "options">
                     when "http"
                       HTTPOptions.new parser
@@ -21,7 +22,7 @@ struct Pingas::ConfigFile
                          "python",
                          "python3",
                          "ruby"
-                      ShellOptions.new parser, shell: kind.not_nil!
+                      ShellOptions.new parser, shell: k
                     else
                       parser.raise %<unrecognized "kind": #{kind}>
                     end
