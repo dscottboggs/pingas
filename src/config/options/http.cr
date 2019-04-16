@@ -45,7 +45,7 @@ struct Pingas::ConfigFile
             Body: #{response.body?}
             HERE
           else
-            raise "failure"
+            raise Failures::HTTP.new url, response
           end
         end
       end

@@ -1,19 +1,35 @@
 ---
+notifiers:
+  telegram group:
+    kind: telegram
+    options:
+      chat id: ""
+      api key: ""
+      minimum severity: Warning
+pings:
+  test url:
+    kind: http
+    options:
+      path: https://test.tams.tech/
+      method: POST
+      body: ping
+      notifiers:
+        - telegram group
 
-- kind: http
-  options:
-    path: https://test.tams.tech/
-    method: POST
-    body: ping
+  bash test:
+    kind: bash
+    options:
+      command: echo test
+      status: 0
+      output: test
+      notifiers:
+        - telegram group
 
-- kind: bash
-  options:
-    command: echo test
-    status: 0
-    output: test
-
-- kind: sh
-  options:
-    command: echo shell test; false
-    status: 1
-    output: shell test
+  posix shell test:
+    kind: sh
+    options:
+      command: echo shell test; false
+      status: 1
+      output: shell test
+      notifiers:
+        - telegram group
