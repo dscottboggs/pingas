@@ -1,0 +1,40 @@
+{
+  "notifiers": {
+    "telegram group": {
+      "kind": "telegram",
+      "options": {
+        "chat id": "",
+        "api key": "",
+        "minimum severity": "Warning"
+      }
+    }
+  },
+  "pings": {
+    "test url": {
+      "kind": "http",
+      "options": {
+        "path": "https://test.tams.tech/",
+        "method": "POST",
+        "body": "ping",
+        "notifiers": [ "telegram group" ]
+      }
+    },
+    "bash test": {
+      "kind": "http",
+      "options": {
+        "command": "echo test",
+        "output": "test",
+        "notifiers": [ "telegram group" ]
+      }
+    },
+    "posix shell test": {
+      "kind": "sh",
+      "options": {
+        "command": "echo shell test; false",
+        "status": 1,
+        "output": "shell test",
+        "notifiers": [ "telegram group" ]
+      }
+    }
+  }
+}

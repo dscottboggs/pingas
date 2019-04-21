@@ -8,6 +8,10 @@ targets:
   pingas:
     main: src/pingas.cr
 
+dependencies:
+  telegram_bot:
+    github: hangyas/telegram_bot
+
 crystal: 0.27.2
 
 license: MIT

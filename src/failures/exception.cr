@@ -1,10 +1,6 @@
-
-abstract class Failures::Exception < ::Exception
-  abstract def message
+abstract class Pingas::Failures::Exception < ::Exception
+  abstract def msg
   abstract def severity
-  def initialize(@message : String)
-    super @message
-  end
 end
 
 require "./*"

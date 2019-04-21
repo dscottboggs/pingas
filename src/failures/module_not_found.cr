@@ -1,9 +1,13 @@
-class Pingas::Failures::ModuleNotFound < Exception
-  property message : String
+require "./exception"
+
+class Pingas::Failures::ModuleNotFound < Pingas::Failures::Exception
+  property msg : String
+
   def severity
     Severity::Warning
   end
+
   def initialize(title)
-    super @message = "no module found with title " + title
+    super @msg = "no module found with title " + title
   end
 end

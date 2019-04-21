@@ -1,7 +1,7 @@
 require "./severity"
 require "./notifier/*"
 
-abstract class Pingas::Notifier
+module Pingas::Notifier
   def self.new(pull parser : JSON::PullParser)
     kind = nil
     parser.read_object do |key|
@@ -10,13 +10,25 @@ abstract class Pingas::Notifier
       when "options"
         case k = kind
         when nil
-          parser.raise %<"kind" must be specified first when defining a notifier>
+          raise JSON::ParseException.new <<-HERE, parser.line_number, parser.column_number
+            key "kind" must be specified before "options" in the configuration.
+          HERE
         when "telegram"
-          return Notifier::Telegram.new pull: parser
+          return Notifier::Telegram.new from_json: parser
         end
       end
     end
+    raise JSON::ParseException.new <<-HERE, parser.line_number, parser.column_number unless kind.nil?
+    unrecognized kind "#{kind}" -- currently known options are:
+      - telegram
+    HERE
+    raise JSON::ParseException.new <<-HERE, parser.line_number, parser.column_number
+    the "kind" property of every notifier must be specified. Currently available
+    options are:
+      - telegram
+    HERE
   end
 
   abstract def notify(msg, severity = Severity::Warning)
+  abstract def spawn_service(error_channel : Channel(Exception))
 end

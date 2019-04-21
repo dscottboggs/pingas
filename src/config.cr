@@ -1,64 +1,67 @@
 require "./failures/exception"
-require "./config/entry"
+require "./config/**"
 
-struct Pingas::ConfigFile
-  # include YAML::Serializable
-  include JSON::Serializable
-  property notifiers : Hash(String, Notifier)
+struct Pingas::Config
+  module Defaults
+    extend self
 
-  def initialize(@data); end
+    def file_location : String
+      ENV["PINGAS_CONFIG_FILE"]? ||
+        ENV["XDG_CONFIG_HOME"]?.try do |path|
+          ::File.join(path, "pingas", "config.json")
+        end ||
+        ENV["HOME"]?.try do |path|
+          ::File.join(path, ".config", "pingas", "config.json")
+        end || ::File.join("/home", ENV["USER"], ".config", "pingas", "config.json")
+    end
 
-  def self.new
-    new ({} of String => Entry)
+    def granularity
+      10.seconds
+    end
   end
 
-  property data : Hash(String, Entry)
+  property file_location : String { Defaults.file_location }
+  property file : Config::File do
+    ::File.open file_location do |file_io|
+      Config::File.from_json file_io
+    end
+  end
+  property granularity : Time::Span { Defaults.granularity }
 
-  def run(subset : Array(String) = data.keys)
-    subset.each do |title|
-      if mod = data[title]?
-        mod.run
+  HELP_TEXT = <<-HERE
+    Pingas: Ping your services for health and status.
+
+  Usage: pingas [options]
+
+  Options:
+      -h, --help, help            Display this help message.
+      -f, --config-file           The location of the config file.
+          Default:                #{Defaults.file_location}
+      -g, --granularity           The number of seconds between pings.
+  HERE
+
+  def initialize(@file_location = Defaults.file_location,
+                 @granularity = Defaults.granularity)
+  end
+
+  def self.from_args(args = ARGV)
+    config = new
+    while arg = args.shift?
+      case arg
+      when "-f", "--config-file" then config.file_location = args.shift
+      when .starts_with? "--config-file"
+        config.file_location = arg["--config-file=".size..]
+      when "-g", "--granularity" then config.granularity = args.shift.to_i.seconds
+      when .starts_with?("-g")   then config.granularity = arg[2..].to_i.seconds
+      when .starts_with? "--granularity"
+        config.granularity = arg["--granularity=".size..].to_i.seconds
+      when "-h", "--help", "help"
+        STDERR.puts HELP_TEXT
+        exit 0
       else
-        raise Failures::ModuleNotFound.new title
+        puts "unrecognized option #{arg}"
       end
     end
-  rescue e : Failures::Exception
-    notify e
-  rescue e : ::Exception
-    notify "uncaught exception: #{e.message}", severity: Severity::Error
+    config
   end
-
-  def notify(message : String,
-             selected_notifiers : Array(String) = @notifiers.keys,
-             severity = Severity::Info)
-    selected_notifiers.each do |nkey|
-      if notifier = notifiers[nkey]?
-        notifier.notify message, severity
-      end
-    end
-  end
-
-  def notify(exception : Failures::Exception)
-    notify exception.message, severity: exception.severity
-  end
-  # def to_yaml(io : IO)
-  #   YAML.build io do |builder|
-  #     to_yaml builder
-  #   end
-  #   io
-  # end
-  # def to_yaml(builder : YAML::Builder)
-  #   builder.sequence do
-  #     data.to_yaml builder
-  #   end
-  # end
-  # def self.new(pull parser : YAML::PullParser)
-  #   instance = new
-  #   parser.read_sequence do
-  #     while parser.kind.scalar?
-  #       instance.data << Entry.new parser
-  #     end
-  #   end
-  #   instance
-  # end
 end
