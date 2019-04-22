@@ -14,7 +14,9 @@ module Pingas::Notifier
             key "kind" must be specified before "options" in the configuration.
           HERE
         when "telegram"
-          return Notifier::Telegram.new from_json: parser
+          n = Notifier::Telegram.new from_json: parser
+          parser.read_end_object
+          return n
         end
       end
     end
