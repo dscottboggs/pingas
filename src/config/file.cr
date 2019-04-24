@@ -23,8 +23,22 @@ struct Pingas::Config
       raise JSON::ParseException.new "pings must be set", parser.line_number, parser.column_number unless pset
       new notifiers, pings
     end
+    include JSON::Serializable
+    include JSON::Serializable::Strict
     property notifiers : Hash(String, Notifier)
     property pings : Hash(String, Ping)
+
+    def to_json(*, indent level = nil)
+      String.build { |io| to_json io, indent: level }
+    end
+
+    def to_json(io : IO, *, indent level = nil)
+      builder = JSON::Builder.new io
+      if indent = level
+        builder.indent = indent
+      end
+      to_json builder
+    end
 
     def initialize(@notifiers = {} of String => Notifier,
                    @pings = {} of String => Ping)

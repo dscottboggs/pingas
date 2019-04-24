@@ -7,19 +7,30 @@ struct Pingas::Config
     property url : URI
     property method : String
     property body : String?
-    property severity : Severity { Severity::Warning }
 
-    def initialize(@url, @method, @body, @severity); end
+    def initialize(@url,
+                   @method,
+                   @body,
+                   @severity,
+                   notifiers @notifier_names = nil)
+    end
 
     def self.new(pull parser : JSON::PullParser)
       path, method, body = nil, nil, nil
       severity = Severity::Warning
+      notifiers = nil
       parser.read_object do |key|
         case key
-        when "path"     then url = URI.parse parser.read_string
+        when "path"     then path = URI.parse parser.read_string
         when "method"   then method = parser.read_string
-        when "body"     then body = parser.read? String
+        when "body"     then body = parser.read_string
         when "severity" then severity = Severity.new parser
+        when "notifiers"
+          n = [] of String
+          parser.read_array do
+            n << parser.read_string
+          end
+          notifiers = n
         else
           raise JSON::ParseException.new <<-HERE, parser.line_number, parser.column_number
           unrecognized option "#{key}" for options of an HTTP-kind ping.
@@ -31,7 +42,17 @@ struct Pingas::Config
       the option "{{key.id}}" is required for the options of an HTTP-kind ping.
       HERE
       {% end %}
-      new path.not_nil!, method.not_nil!, body, severity
+      new path.not_nil!, method.not_nil!, body, severity, notifiers || Pingas.config.file.notifiers.keys
+    end
+
+    def to_json(builder : JSON::Builder)
+      builder.object do
+        builder.field "path", url
+        builder.field "method", method
+        builder.field "body", body if body
+        builder.field "notifiers", notifier_names
+        builder.field "severity", severity
+      end
     end
 
     private property http_client : HTTP::Client { HTTP::Client.new url }

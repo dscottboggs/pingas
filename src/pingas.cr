@@ -1,3 +1,4 @@
+require "./core_ext/**"
 require "./config"
 require "./failures/exception"
 require "./notifier"

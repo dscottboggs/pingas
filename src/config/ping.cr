@@ -10,6 +10,13 @@ module Pingas
       def initialize(@kind, @options)
       end
 
+      def to_json(builder : JSON::Builder)
+        builder.object do
+          builder.field "kind", kind
+          builder.field "options", options
+        end
+      end
+
       def self.new(pull parser : JSON::PullParser)
         kind, options = nil, nil
         lin, col = parser.line_number, parser.column_number
@@ -21,7 +28,7 @@ module Pingas
                       when nil
                         # TODO this is a bit of a hack....
                         raise JSON::ParseException.new <<-HERE, lin, col
-                          the key "kind" must be specified before the "options" key.
+                          the key "kind" must be specified before the "options" key
                         HERE
                       when "http"
                         HTTPOptions.new parser

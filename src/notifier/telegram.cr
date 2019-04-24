@@ -55,6 +55,14 @@ class Pingas::Notifier::Telegram < TelegramBot::Bot
     end
     super "Pingas", @api_key
   end
+  def to_json(builder : JSON::Builder)
+    builder.object do
+      builder.field "chat_id", chat_id
+      builder.field "api_key", api_key
+      builder.field "minimum_severity", minimum_severity
+      builder.field "port", port
+    end
+  end
 
   def handle(message : TelegramBot::Message)
     if text = message.text

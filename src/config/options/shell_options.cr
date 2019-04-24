@@ -9,7 +9,6 @@ struct Pingas::Config::ShellOptions < Pingas::Config::Options
   property input : String?
   property env : Hash(String, String)
   property workdir : String?
-  property severity : Severity
 
   def initialize(@shell,
                  @command,
@@ -19,7 +18,8 @@ struct Pingas::Config::ShellOptions < Pingas::Config::Options
                  @input = nil,
                  @env = {} of String => String,
                  @workdir = nil,
-                 @severity = Severity::Warning)
+                 @severity = Severity::Warning,
+                 @notifier_names = nil)
   end
 
   def self.new(pull parser : JSON::PullParser, *, shell : String = "bash")
@@ -31,6 +31,7 @@ struct Pingas::Config::ShellOptions < Pingas::Config::Options
     env = {} of String => String
     workdir = nil
     severity = Severity::Warning
+    notifiers = nil
     parser.read_object do |key|
       case key
       when "command"  then command = parser.read_string
@@ -41,12 +42,18 @@ struct Pingas::Config::ShellOptions < Pingas::Config::Options
       when "env"      then env.merge! Hash(String, String).new parser
       when "workdir"  then workdir = parser.read_string
       when "severity" then severity = Severity.new parser
+      when "notifiers"
+        n = [] of String
+        parser.read_array do
+          n << parser.read_string
+        end
+        noifiers = n
       else
         raise JSON::ParseException.new %<unrecognized key "#{key}">, parser.line_number, parser.column_number
       end
     end
     raise JSON::ParseException.new %<key "command" must be specified>, parser.line_number, parser.column_number if command.nil?
-    new shell, command.not_nil!, status, output, error, input, env, workdir, severity
+    new shell, command.not_nil!, status, output, error, input, env, workdir, severity, notifiers
   end
 
   def formatted_command
@@ -136,7 +143,8 @@ struct Pingas::Config::ShellOptions < Pingas::Config::Options
 
   def to_json(builder : JSON::Builder)
     builder.object do
-      {% for ivar in @type.instance_vars %}
+      builder.field "notifiers", notifier_names
+      {% for ivar in @type.instance_vars.reject { |v| v.name == :notifier_names.id } %}
       builder.field "{{ivar.name}}", {{ivar}} if {{ivar}}
       {% end %}
     end
