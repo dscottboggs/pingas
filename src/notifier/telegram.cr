@@ -57,10 +57,15 @@ class Pingas::Notifier::Telegram < TelegramBot::Bot
   end
   def to_json(builder : JSON::Builder)
     builder.object do
-      builder.field "chat_id", chat_id
-      builder.field "api_key", api_key
-      builder.field "minimum_severity", minimum_severity
-      builder.field "port", port
+      builder.field "kind", "telegram"
+      builder.field "options" do
+        builder.object do
+          builder.field "chat_id", chat_id
+          builder.field "api_key", api_key
+          builder.field "minimum_severity", minimum_severity.to_s
+          builder.field "port", port unless port == 11_011_u16
+        end
+      end
     end
   end
 

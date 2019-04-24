@@ -37,7 +37,9 @@ struct Pingas::Config
       if indent = level
         builder.indent = indent
       end
-      to_json builder
+      builder.document do
+        to_json builder
+      end
     end
 
     def initialize(@notifiers = {} of String => Notifier,

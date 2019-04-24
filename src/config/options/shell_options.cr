@@ -144,7 +144,9 @@ struct Pingas::Config::ShellOptions < Pingas::Config::Options
   def to_json(builder : JSON::Builder)
     builder.object do
       builder.field "notifiers", notifier_names
-      {% for ivar in @type.instance_vars.reject { |v| v.name == :notifier_names.id } %}
+      builder.field "env", env unless env.empty?
+      builder.field "severity", severity.to_s unless severity == Severity::Warning
+      {% for ivar in @type.instance_vars.reject { |v| [:notifier_names.id, :env.id, :severity.id, :shell.id].includes? v.name } %}
       builder.field "{{ivar.name}}", {{ivar}} if {{ivar}}
       {% end %}
     end

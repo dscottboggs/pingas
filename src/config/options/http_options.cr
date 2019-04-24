@@ -51,7 +51,7 @@ struct Pingas::Config
         builder.field "method", method
         builder.field "body", body if body
         builder.field "notifiers", notifier_names
-        builder.field "severity", severity
+        builder.field "severity", severity.to_s unless severity == Severity::Warning
       end
     end
 
