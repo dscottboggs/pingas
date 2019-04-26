@@ -23,8 +23,32 @@ class Pingas::Notifier::Telegram < TelegramBot::Bot
   include Pingas::Notifier
   property chat_id : String
   property api_key : String
+  struct WebhookOptions
+    include JSON::Serializable
+    include JSON::Serializable::Strict
+    # The hostname to tell telegram to send webhook notifications to.
+    property host : String
+    # The port on which to listen for webhook responses
+    property port : UInt16 { 11_011_u16 }
+    # The path to the certificate.
+    #
+    # If this is nil, the service must be deployed behind a TLS-terminating
+    # reverse-proxy. If you don't know what that is, the easiest thing to do is
+    # to use certbot to generate a certificate and set the filepaths with these
+    # optiosn.
+    property certificate : String?
+    # The path to the key.
+    #
+    # If this is nil, the service must be deployed behind a TLS-terminating
+    # reverse-proxy. If you don't know what that is, the easiest thing to do is
+    # to use certbot to generate a certificate and set the filepaths with these
+    # optiosn.
+    property key : String?
+  end
+  # The optional webhook options. If this is nil (not specified in the file) the
+  # service will poll telegram for updates occasionally.
+  property webhook : WebhookOptions?
   property minimum_severity : Severity
-  property port : UInt16 { 11_011_u16 }
   URL = "http://pingas.tams.tech"
 
   def initialize(from_json parser : JSON::PullParser)
@@ -40,7 +64,8 @@ class Pingas::Notifier::Telegram < TelegramBot::Bot
       when "api key"
         @api_key = parser.read_string
         api_key_set = true
-      when "service port" then @port = parser.read_int.to_u16!
+      when "webhook"
+        @webhook = WebhookOptions.new pull: parser
       when "minimum severity"
         if sev = Severity.parse?(parser.read_string)
           @minimum_severity = sev
@@ -63,6 +88,9 @@ class Pingas::Notifier::Telegram < TelegramBot::Bot
           builder.field "chat_id", chat_id
           builder.field "api_key", api_key
           builder.field "minimum_severity", minimum_severity.to_s
+          if wh = webhook
+            builder.field(wh) { wh.to_json builder }
+          end
           builder.field "port", port unless port == 11_011_u16
         end
       end
@@ -76,19 +104,34 @@ class Pingas::Notifier::Telegram < TelegramBot::Bot
   end
 
   def notify(message : String, severity = Severity::Warning)
+    puts "received message to send with severity #{severity} and minimum #{minimum_severity}"
     if severity >= minimum_severity
+      puts "sending message \"#{message}\""
       send_message chat_id: @chat_id, text: message
     end
   end
 
   def spawn_service(error_channel : Channel(Exception))
+    if wh = webhook
+      spawn_webhook_service wh, error_channel
+    else
+      polling
+    end
+  end
+  private def spawn_webhook_service(webhook : WebhookOptions, error_channel : Channel(Exception))
     fork do
-      set_webhook URL
-      # blocks permanently
-      serve "0.0.0.0", port.to_i
+      if (cert = webhook.certificate) && (key = webhook.key)
+        set_webhook webhook.host, cert
+        # blocks permanently
+        serve "0.0.0.0", webhook.port.to_i, cert, key
+      else
+        set_webhook webhook.host
+        # blocks permanently
+        serve "0.0.0.0", webhook.port.to_i
+      end
     rescue e
       error_channel.send e
-      spawn_service error_channel
+      spawn_webhook_service webhook, error_channel
     end
   end
 end

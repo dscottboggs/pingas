@@ -14,12 +14,14 @@ module Pingas
   def run(subset : Array(String) = Pingas.config.file.pings.keys)
     subset.each do |title|
       spawn do
+        puts "doing run for " + title
         if (mod = Pingas.config.file.pings[title]?).nil?
           notify Failures::ModuleNotFound.new title
         else
           mod.run
         end
       rescue e : Failures::Exception
+        puts "got failure " + e.msg
         errors.send e
       rescue e : ::Exception
         errors.send Failures::UncaughtException.new e, severity: Severity::Error
@@ -55,8 +57,9 @@ module Pingas
 
   {% unless env("SPEC") %}
     # don't start the service loop if running the specs
-    Pingas.config.file.notifiers.each { |k, n| n.spawn_service error_channel: errors }
+    Pingas.config.file.notifiers.each { |k, n| spawn {n.spawn_service error_channel: errors} }
     loop do
+      Fiber.yield
       sleep 10.seconds
       run
     end
