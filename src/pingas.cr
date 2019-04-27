@@ -14,7 +14,6 @@ module Pingas
   def run(subset : Array(String) = Pingas.config.file.pings.keys)
     subset.each do |title|
       spawn do
-        puts "doing run for " + title
         if (mod = Pingas.config.file.pings[title]?).nil?
           notify Failures::ModuleNotFound.new title
         else
@@ -22,9 +21,9 @@ module Pingas
         end
       rescue e : Failures::Exception
         puts "got failure " + e.msg
-        errors.send e
+        failures.send e
       rescue e : ::Exception
-        errors.send Failures::UncaughtException.new e, severity: Severity::Error
+        failures.send Failures::UncaughtException.new e, severity: Severity::Error
       end
     end
   end
@@ -50,9 +49,22 @@ module Pingas
     nil
   end
 
-  ERR_BUFSIZE = 6
+  ERR_BUFSIZE = {{ env("ERR_BUFSIZE") }} || ENV["ERR_BUFSIZE"]?try(&.to_i!) || 6
+  class_property failures : Channel(Failures::Exception) do
+    Channel(Failures::Exception).new ERR_BUFSIZE
+  end
   class_property errors : Channel(Exception) do
     Channel(Exception).new ERR_BUFSIZE
+  end
+
+  # Notify the user of failures according to the configured rules.
+  spawn { loop { notify failures.receive } }
+
+  # Notify the user of any uncaught errors
+  spawn do
+    loop do
+      notify Failures::UncaughtException.new errors.receive, severity: Severity::Error
+    end
   end
 
   {% unless env("SPEC") %}
