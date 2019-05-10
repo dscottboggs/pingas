@@ -104,9 +104,7 @@ class Pingas::Notifier::Telegram < TelegramBot::Bot
   end
 
   def notify(message : String, severity = Severity::Warning)
-    puts "received message to send with severity #{severity} and minimum #{minimum_severity}"
     if severity >= minimum_severity
-      puts "sending message \"#{message}\""
       send_message chat_id: @chat_id, text: message
     end
   end

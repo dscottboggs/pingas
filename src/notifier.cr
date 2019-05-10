@@ -8,7 +8,7 @@ module Pingas::Notifier
       case key
       when "kind" then kind = parser.read_string
       when "options"
-        case k = kind
+        case kind
         when nil
           raise JSON::ParseException.new <<-HERE, parser.line_number, parser.column_number
             key "kind" must be specified before "options" in the configuration.

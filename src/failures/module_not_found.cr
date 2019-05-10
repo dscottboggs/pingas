@@ -1,6 +1,7 @@
 require "./exception"
 
-class Pingas::Failures::ModuleNotFound < Pingas::Failures::Exception
+# An error raised when a pinger kind is configured but no such type exists.
+class Pingas::Failures::PingerNotFound < Pingas::Failures::Exception
   property msg : String
 
   def severity

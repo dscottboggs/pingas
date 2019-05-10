@@ -1,13 +1,34 @@
 require "../options"
 
+# Options for a pinger which runs a given command in the specified shell.
 struct Pingas::Config::ShellOptions < Pingas::Config::Options
+  # The shell to run the command in.
+  #
+  # For example:
+  # ```json
+  # "kind": "sh",
+  # "options": {
+  #   "command": "systemctl status someservice"
+  # },
+  # "kind": "python3",
+  # "options": {
+  #   "command": "print('whatever shell you want')"
+  # }
+  # ```
   property shell : String
+  # The text to pass to the shell.
   property command : String
+  # The output status of the command. TODO allow Range or Set.
   property status : UInt8
+  # The expected output of the shell script. TODO allow Regex.
   property output : String?
+  # The expected stderr output of the shell script. TODO allow Regex.
   property error : String?
+  # Text to pass to the shell script on stdin
   property input : String?
+  # Any environment variables that need specified to the command.
   property env : Hash(String, String)
+  # The working directory in which to launch the command.
   property workdir : String?
 
   def initialize(@shell,
@@ -22,6 +43,14 @@ struct Pingas::Config::ShellOptions < Pingas::Config::Options
                  @notifier_names = nil)
   end
 
+  # Parse a ShellOptions from it's options value. This Options object must have
+  # been found directly beneath a "kind" key that lists a known and installed
+  # shell.
+  #
+  # Due to the many branches necessary to parse a JSON text, this method is
+  # inherently cyclomatically complex.
+  #
+  # ameba:disable Metrics/CyclomaticComplexity
   def self.new(pull parser : JSON::PullParser, *, shell : String = "bash")
     command = nil
     status = 0u8
@@ -47,7 +76,7 @@ struct Pingas::Config::ShellOptions < Pingas::Config::Options
         parser.read_array do
           n << parser.read_string
         end
-        noifiers = n
+        notifiers = n
       else
         raise JSON::ParseException.new %<unrecognized key "#{key}">, parser.line_number, parser.column_number
       end

@@ -5,7 +5,9 @@ require "../options"
 struct Pingas::Config
   struct HTTPOptions < Options
     property url : URI
+    # The method to use when making the request.
     property method : String
+    # The body to send with the request.
     property body : String?
 
     def initialize(@url,
@@ -42,7 +44,7 @@ struct Pingas::Config
       the option "{{key.id}}" is required for the options of an HTTP-kind ping.
       HERE
       {% end %}
-      new path.not_nil!, method.not_nil!, body, severity, notifiers || Pingas.config.file.notifiers.keys
+      new path.not_nil!, method.not_nil!, body, severity, notifiers
     end
 
     def to_json(builder : JSON::Builder)

@@ -3,6 +3,22 @@ require "./options/*"
 module Pingas
   struct Config
     struct Ping
+      # The kind of ping this object specifies. The available kinds are:
+      #
+      # ```
+      # http:     A web request.
+      # sh:       Run a command in the system's default POSIX-compatible shell.
+      # bash:     Run a command in the bash shell.
+      # zsh:      Run a command in the zsh shell.
+      # fish:     Run a command in the fish shell.
+      # python2:  Run a command in the system's default python2 shell.
+      # python3:  Run a command in the system's default python3 shell.
+      # ruby:     Run a command in the system's default ruby shell.
+      # ````
+      #
+      # Note the lack of a generic "python" shell. This is to avoid confusion
+      # between python3 (what should be written by default) and python2 (the
+      # shell launched when running the "python" command)
       property kind : String
       property options : Pingas::Config::Options
       delegate :run, to: @options
@@ -36,7 +52,7 @@ module Pingas
                            "bash",
                            "zsh",
                            "fish",
-                           "python",
+                           "python2",
                            "python3",
                            "ruby"
                         ShellOptions.new parser, shell: k

@@ -15,7 +15,7 @@ module Pingas
     subset.each do |title|
       spawn do
         if (mod = Pingas.config.file.pings[title]?).nil?
-          notify Failures::ModuleNotFound.new title
+          notify Failures::PingerNotFound.new title
         else
           mod.run
         end
@@ -49,7 +49,7 @@ module Pingas
     nil
   end
 
-  ERR_BUFSIZE = {{ env("ERR_BUFSIZE") }} || ENV["ERR_BUFSIZE"]?try(&.to_i!) || 6
+  ERR_BUFSIZE = {{ env("ERR_BUFSIZE") }} || ENV["ERR_BUFSIZE"]?.try(&.to_i) || 6
   class_property failures : Channel(Failures::Exception) do
     Channel(Failures::Exception).new ERR_BUFSIZE
   end
